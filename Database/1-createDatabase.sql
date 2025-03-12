@@ -1,8 +1,8 @@
 CREATE TABLE news (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
+    text TEXT,
     subject TEXT,
-    DATE TEXT,
-    content TEXT,
+    date TEXT,
     label TEXT -- 'Fake' or 'Real'
 );
