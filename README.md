@@ -1,5 +1,4 @@
 # Fake News Detection with Machine Learning
----
 
 This project is focused on detecting fake news using various machine learning models. It involves a complete pipeline from raw data handling to model evaluation and optimization.
 ---
