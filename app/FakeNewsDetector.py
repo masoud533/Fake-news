@@ -1,31 +1,24 @@
 import os
 import re
 import nltk
-import json
 import pickle
-import tkinter
-import numpy as np
+import tkinter as tk
 from tkinter import *
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
-modelPath = os.path.join('..', 'Models', 'lrModel.model')
-model = open(modelPath, 'rb')
-LR = pickle.load(model)
-model.close()
 
-modelPath = os.path.join('..', 'Models', 'tfidf_vectorizer.model')
-model = open(modelPath, 'rb')
-V = pickle.load(model)
-model.close()
+# Load models
+with open(os.path.join('..', 'Models', 'lrModel.model'), 'rb') as model_file:
+    LR = pickle.load(model_file)
 
-# 2. Initialize stopwords, stemmer, and lemmatizer
+with open(os.path.join('..', 'Models', 'tfidf_vectorizer.model'), 'rb') as vectorizer_file:
+    V = pickle.load(vectorizer_file)
+
+# Preprocessing tools
 stop_words = set(stopwords.words("english"))
-stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
-
 
 def predict_class(text):
     text = text.lower()
@@ -35,10 +28,9 @@ def predict_class(text):
     words = [lemmatizer.lemmatize(word) for word in words]
     X = [" ".join(words)]
     x_v = V.transform(X)
-    p = LR.predict(x_v)
-    print(p)
-    return 1
-
+    p = LR.predict(x_v)[0]
+    
+    return "Fake" if p == 0 else "Real"
 
 def send():
     msg = EntryBox.get("1.0", "end-1c").strip()
@@ -46,30 +38,43 @@ def send():
     if msg != '':
         ChatLog.config(state=NORMAL)
         res = predict_class(msg)
-        ChatLog.insert(END, "Result: " + res + '\n')
+        ChatLog.insert(END, "You: " + msg + '\n', "user")
+        ChatLog.insert(END, "Result: " + res + '\n\n', "result_fake" if res == "Fake" else "result_real")
         ChatLog.config(state=DISABLED)
-        ChatLog.YView(END)
+        ChatLog.yview(END)
+        EntryBox.delete("1.0", END)
 
+# GUI Setup
 base = Tk()
 base.title("Fake News Detector")
-base.geometry("450x550")
-base.resizable(width=True, height=True)
+base.geometry("500x600")
+base.resizable(width=False, height=False)
+base.configure(bg="#f2f2f2")
 
-ChatLog = Text(base,bd=0, bg="white", height="8", width="50", font="Arial")
-
+# Chat log
+ChatLogFrame = Frame(base, bg="#f2f2f2")
+ChatLog = Text(ChatLogFrame, bd=0, bg="white", height="20", width="60", font=("Helvetica", 12), wrap=WORD)
+ChatLog.tag_config("user", foreground="black", font=("Helvetica", 12, "bold"))
+ChatLog.tag_config("result_real", foreground="green", font=("Helvetica", 12, "bold"))
+ChatLog.tag_config("result_fake", foreground="red", font=("Helvetica", 12, "bold"))
 ChatLog.config(state=DISABLED)
 
-scrollbar = Scrollbar(base, command=ChatLog.yview)
+scrollbar = Scrollbar(ChatLogFrame, command=ChatLog.yview)
 ChatLog['yscrollcommand'] = scrollbar.set
 
-SendButton = Button(base, font=("Verdana", 12, "bold"), text="Run", width="12",height=5,
-                    bd=0, bg='#32de97', activebackground='#3c9d9b', fg='#ffffff', command= send)
+ChatLogFrame.pack(pady=10)
+scrollbar.pack(side=RIGHT, fill=Y)
+ChatLog.pack(side=LEFT, fill=BOTH, expand=True)
 
-EntryBox = Text(base, bd=0, bg="white", width="29", height="5", font="Arial")
-scrollbar.place(x=376, y=6, height=386)
-ChatLog.place(x=6,y=6, height=386, width=370)
-EntryBox.place(x=128, y=401, height=90, width=265)
-SendButton.place(x=6, y=401, height=90)
+# Entry box and button
+BottomFrame = Frame(base, bg="#f2f2f2")
+EntryBox = Text(BottomFrame, bd=0, bg="white", width="40", height="4", font=("Helvetica", 12))
+SendButton = Button(BottomFrame, text="Detect", font=("Helvetica", 12, "bold"), width="10", height=2,
+                    bd=0, bg='#32de97', activebackground='#3c9d9b', fg='white', command=send)
+
+BottomFrame.pack(pady=10)
+EntryBox.grid(row=0, column=0, padx=10, pady=5)
+SendButton.grid(row=0, column=1, padx=5)
 
 base.mainloop()
 
